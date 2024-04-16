@@ -6,13 +6,13 @@
 
 ## Overview
 
-The landscape of Kubernetes and containerized applications has evolved rapidly in recent years, demanding innovative solutions to manage and orchestrate deployments seamlessly. Flamingo, the Flux subsystem for ArgoCD, is a powerful integration of these two GitOps titans, to supercharge your workflows. This dynamic duo creates a seamless and powerful GitOps-driven platform for managing Kubernetes applications and infrastructure. Join us for a deep dive into Flamingo and discover how it can revolutionize your GitOps workflows This lab will guide you step-by-step through the process of getting started with a Flamingo management cluster and two edge clusters to deploy and manage a sample application.
+The landscape of Kubernetes and containerized applications has evolved rapidly in recent years, demanding innovative solutions to manage and orchestrate deployments seamlessly. Flamingo, the Flux subsystem for ArgoCD, is a powerful integration of these two GitOps titans, to supercharge your workflows. This dynamic duo creates a seamless and powerful GitOps-driven platform for managing Kubernetes applications and infrastructure. Join us for a deep dive into Flamingo and discover how it can revolutionize your GitOps workflows. This lab will guide you step-by-step through the process of getting started with a Flamingo management cluster and two edge clusters to deploy and manage a sample application.
 
 ## Architectural Diagram
 
-TO-DO
+![Flamingo Infrastructure](img/flamingo-infra.png "Flamingo Infrastructure")
 
-## Step 1: Install Prerequisites
+## Install Prerequisites
 
 To get started with the lab, we will need to meet some tool prerequisites. For our lab, we will be using Azure Kubernetes Service (AKS), but you may use a cloud provider of your choice. Simply replace the commands with the equivalent ones needed to create a Kubernetes cluster and merge them into your existing kubeconfig.
 
@@ -27,10 +27,10 @@ brew install fluxcd/tap/flux
 brew install flux-subsystem-argo/tap/flamingo
 ```
 
-## Step 2: Create AKS management and edge clusters
+## Create the AKS management and edge clusters
 
 ```bash
-# Set your Azure Subscription ID and necessary variables for cluster creation
+# Set your Azure Subscription ID and required variables for cluster creation
 export AZURE_SUBSCRIPTION_ID=$(az account show --query id -o tsv)
 az account set --subscription $AZURE_SUBSCRIPTION_ID
 
@@ -58,14 +58,13 @@ for LOCATION in eastus2 westus2; do \
       -s Standard_B4ms -c $NODE_COUNT \
       --network-plugin kubenet -n $EDGE_CLUSTER_NAME \
       --location $LOCATION; \
-      az aks get-credentials --resource-group $CLUSTER_RG --name $EDGE_CLUSTER_NAME --overwrite-existing
+  az aks get-credentials --resource-group $CLUSTER_RG --name $EDGE_CLUSTER_NAME --overwrite-existing
 done
 ```
 
-## Step 3: Install Flamingo in Management Cluster
+## Install Flamingo in the Management Cluster
 
 ```bash
-
 # Switch Context to Management Cluster
 kubectl config use-context $MGMT_CLUSTER_NAME
 
@@ -79,12 +78,12 @@ kubectl get pods -n argocd
 flamingo show-init-password
 
 # Portforward to http://localhost:8080
-kubectl port-forward svc/argocd-server 8080:443 -n argocd
+flamingo port-fwd
 ```
 
 > Access the Flamingo UI: [http://localhost:8080](http://localhost:8080).
 
-## Step 4: Install Flux Controllers in each edge cluster
+## Install Flux Controllers in each edge cluster
 
 ```bash
 export GITHUB_TOKEN=<update with your github PAT>
@@ -98,14 +97,13 @@ done
 git pull
 ```
 
-## Step 5: Deploy podinfo-kustomize in each edge cluster
+## Deploy podinfo using Flux Kustomize controller in eastus2 edge cluster
+
+We will now deploy the podinfo app in the eastus2 edge cluster using Kustomization. For more information about the Flux Kustomize controller, please refer to the documentation [here](https://fluxcd.io/flux/components/kustomize/).
 
 ```bash
-
-for LOCATION in eastus2 westus2; do \
-  EDGE_CLUSTER_NAME="edge-dev-$LOCATION"; \
-  kubectl config use-context "$EDGE_CLUSTER_NAME"; \
-  cat << EOF | kubectl apply -f -
+kubectl config use-context "edge-dev-eastus2"
+cat << EOF | kubectl apply -f -
 ---
 apiVersion: v1
 kind: Namespace
@@ -121,7 +119,7 @@ spec:
   interval: 10m
   url: oci://ghcr.io/stefanprodan/manifests/podinfo
   ref:
-    tag: latest
+    tag: 6.6.1
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -137,17 +135,15 @@ spec:
     name: podinfo
   path: ./
 EOF
-done
 ```
 
-## Step 6: Deploy podinfo-helm in each edge cluster
+## Deploy podinfo using Flux Helm controller in westus2 edge cluster
+
+We will now deploy the podinfo app in the westus2 edge cluster using Helm. For more information about the Flux Helm controller, please refer to the documentation [here](https://fluxcd.io/flux/components/helm).
 
 ```bash
-
-for LOCATION in eastus2 westus2; do \
-  EDGE_CLUSTER_NAME="edge-dev-$LOCATION"; \
-  kubectl config use-context "$EDGE_CLUSTER_NAME"; \
-  cat << EOF | kubectl apply -f -
+kubectl config use-context "edge-dev-westus2"
+cat << EOF | kubectl apply -f -
 ---
 apiVersion: v1
 kind: Namespace
@@ -175,17 +171,18 @@ spec:
   chart:
     spec:
       chart: podinfo
-      version: '*'
+      version: '6.6.1'
       sourceRef:
         kind: HelmRepository
         name: podinfo
       verify:
         provider: cosign # keyless
 EOF
-done
 ```
 
-## Step 7: Register Edge Clusters in Flamingo
+## Register Edge Clusters in Flamingo
+
+For the management cluster to visualize and manage the resources of each edge cluster, we need to register each cluster by creating a secret based on the existing kubeconfig context.
 
 ```bash
 kubectl config use-context $MGMT_CLUSTER_NAME
@@ -198,15 +195,16 @@ for LOCATION in eastus2 westus2; do \
 done
 
 flamingo list-clusters
-
 ```
 
-## Step 8: Register the Flux applications in Flamingo
+## Register the Flux applications in Flamingo
 
 ```bash
 kubectl config use-context $MGMT_CLUSTER_NAME
 flamingo generate-app --app-name podinfo-ks-eastus2 edge-dev-eastus2/ks/podinfo -n podinfo-kustomize
-flamingo generate-app --app-name podinfo-ks-westus2 edge-dev-westus2/ks/podinfo -n podinfo-kustomize
-flamingo generate-app --app-name podinfo-helm-eastus2 edge-dev-eastus2/hr/podinfo -n podinfo-helm
 flamingo generate-app --app-name podinfo-helm-westus2 edge-dev-westus2/hr/podinfo -n podinfo-helm
+
+flamingo get -A
 ```
+
+Now you can go back to your Flamingo Dashboard [here](http://localhost:8080) and visualize and manage your Flux  resources in each edge cluster!
