@@ -207,4 +207,4 @@ flamingo generate-app --app-name podinfo-helm-westus2 edge-dev-westus2/hr/podinf
 flamingo get -A
 ```
 
-Now you can return to your Flamingo Dashboard [here](http://localhost:8080)to visualize and manage your Flux resources in each edge cluster!
+Now you can return to your Flamingo Dashboard [here](http://localhost:8080) to visualize and manage your Flux resources in each edge cluster!
