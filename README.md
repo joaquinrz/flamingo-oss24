@@ -1,4 +1,4 @@
-# Two GitOps Titans, One Powerful Solution: Flamingo (Flux + Argo)!
+# Two GitOps Titans, One Powerful Solution: Flamingo (Flux + Argo)
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
