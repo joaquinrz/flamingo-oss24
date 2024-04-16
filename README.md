@@ -14,7 +14,7 @@ The landscape of Kubernetes and containerized applications has evolved rapidly i
 
 ## Install Prerequisites
 
-To get started with the lab, we will need to meet some tool prerequisites. For our lab, we will be using Azure Kubernetes Service (AKS), but you may use a cloud provider of your choice. Simply replace the commands with the equivalent ones needed to create a Kubernetes cluster and merge them into your existing kubeconfig.
+To get started with the lab, we need to meet some tool prerequisites. For our lab, we will be using Azure Kubernetes Service (AKS); however, you may also use a cloud provider of your choice. Simply replace the provided commands with the equivalent ones required to create a Kubernetes cluster and merge them into your existing kubeconfig.
 
 ```bash
 # Install Azure CLI
@@ -182,7 +182,7 @@ EOF
 
 ## Register Edge Clusters in Flamingo
 
-For the management cluster to visualize and manage the resources of each edge cluster, we need to register each cluster by creating a secret based on the existing kubeconfig context.
+To enable the management cluster to visualize and manage the resources of each edge cluster, we need to register each cluster by creating a secret based on the existing kubeconfig context.
 
 ```bash
 kubectl config use-context $MGMT_CLUSTER_NAME
@@ -207,4 +207,4 @@ flamingo generate-app --app-name podinfo-helm-westus2 edge-dev-westus2/hr/podinf
 flamingo get -A
 ```
 
-Now you can go back to your Flamingo Dashboard [here](http://localhost:8080) and visualize and manage your Flux  resources in each edge cluster!
+Now you can return to your Flamingo Dashboard [here](http://localhost:8080)to visualize and manage your Flux resources in each edge cluster!
